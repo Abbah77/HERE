@@ -1,0 +1,11 @@
+workflows:
+  android-apk-workflow:
+    name: Build Android APK
+    instance_type: mac_mini_m1 # M1 machines are fast for Kotlin/Compose
+    scripts:
+      - name: Build Debug APK
+        script: | 
+          chmod +x gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - app/build/outputs/apk/debug/*.apk
