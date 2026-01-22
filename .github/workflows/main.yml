@@ -1,15 +1,18 @@
-name: Generate Missing Build Files
+name: Build APK
 
 on:
   push:
     branches: [main]
 
 jobs:
-  generate:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Run AI bot to fix build files
-        run: |
-          # Example command: replace with your AI/bot tool
-          python scripts/generate_build_files.py
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Build APK
+        run: ./gradlew assembleDebug
