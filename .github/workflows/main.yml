@@ -1,0 +1,33 @@
+name: Auto-Fix Android Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Build APK
+        run: ./gradlew assembleDebug
+
+      - name: Run GitHub Bot / Script
+        run: |
+          # Example: replace wrong build files with correct templates
+          # You can point this to a script or AI tool you have
+          bash scripts/fix_build_files.sh
