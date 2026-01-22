@@ -7,5 +7,5 @@ workflows:
         script: | 
           chmod +x gradlew
           ./gradlew assembleDebug
-    artifacts:
-      - app/build/outputs/apk/debug/*.apk
+        artifacts:
+      - "**/build/outputs/apk/**/*.apk"
