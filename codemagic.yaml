@@ -1,11 +1,13 @@
 workflows:
   android-apk-workflow:
     name: Build Android APK
-    instance_type: mac_mini_m1 # M1 machines are fast for Kotlin/Compose
+    instance_type: mac_mini_m1
     scripts:
       - name: Build Debug APK
         script: | 
+          # Move into the folder where your gradlew file actually is
+          cd HERE 
           chmod +x gradlew
           ./gradlew assembleDebug
-        artifacts:
+    artifacts:
       - "**/build/outputs/apk/**/*.apk"
