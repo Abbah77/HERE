@@ -27,6 +27,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initializeAnimations();
+    
+    // Check for errors after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkInitialErrors();
+    });
   }
 
   void _initializeAnimations() {
@@ -54,6 +59,14 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  void _checkInitialErrors() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.hasError && authProvider.errorMessage != null) {
+      _showErrorSnackBar(authProvider.errorMessage!);
+      authProvider.clearError();
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -72,16 +85,9 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           },
         ),
       );
-    }
-  }
-
-  void _listenToAuthState(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: true);
-    if (authProvider.hasError && authProvider.errorMessage != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showErrorSnackBar(authProvider.errorMessage!);
-        authProvider.clearError();
-      });
+    } else if (mounted && authProvider.hasError) {
+      _showErrorSnackBar(authProvider.errorMessage ?? 'Login failed');
+      authProvider.clearError();
     }
   }
 
@@ -107,8 +113,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    _listenToAuthState(context);
-    final isLoading = Provider.of<AuthProvider>(context).isLoading;
+    final isLoading = context.watch<AuthProvider>().isLoading;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -209,7 +214,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            // FIXED: withValues -> withOpacity
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -269,7 +275,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: isLoading 
-          ? const CircularProgressIndicator(color: Colors.white) 
+          ? const SizedBox(
+              height: 20, 
+              width: 20, 
+              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+            ) 
           : const Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ),
     );
@@ -317,7 +327,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 8)],
+          boxShadow: [
+            // FIXED: withValues -> withOpacity
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8)
+          ],
         ),
         alignment: Alignment.center,
         child: Text(label, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
