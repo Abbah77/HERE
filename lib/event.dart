@@ -52,8 +52,8 @@ class _EventPageState extends State<EventPage> with SingleTickerProviderStateMix
           Positioned.fill(
             child: FlutterMap(
               options: MapOptions(
-                initialCenter: eventCoord, // FIXED: center -> initialCenter
-                initialZoom: 14.0,         // FIXED: zoom -> initialZoom
+                initialCenter: eventCoord, 
+                initialZoom: 14.0,         
               ),
               children: [
                 TileLayer(
@@ -145,8 +145,6 @@ class _EventDetailsSheet extends StatelessWidget {
   }
 }
 
-// --- Sub-widgets for clarity ---
-
 class _CircleIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
@@ -159,7 +157,8 @@ class _CircleIconButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)], // FIXED: withOpacity
+        // FIXED: Changed withValues to withOpacity
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)], 
       ),
       child: IconButton(onPressed: onPressed, icon: Icon(icon, size: 20)),
     );
@@ -220,7 +219,6 @@ class _ActionButtonsRow extends StatelessWidget {
   }
 }
 
-// Internal reusable components
 class _DragHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)));
@@ -235,7 +233,15 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), shape: BoxShape.circle), child: Icon(icon, color: Colors.orange, size: 20)),
+        // FIXED: Changed withValues to withOpacity
+        Container(
+          padding: const EdgeInsets.all(8), 
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1), 
+            shape: BoxShape.circle
+          ), 
+          child: Icon(icon, color: Colors.orange, size: 20)
+        ),
         const SizedBox(width: 16),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title, style: const TextStyle(color: Colors.grey, fontSize: 12)),
