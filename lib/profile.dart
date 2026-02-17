@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:here/providers/auth_provider.dart';
 import 'package:here/providers/post_provider.dart';
 // FIXED: Ensured this matches your file structure
-import 'package:here/widgets/post_widget.dart'; 
+import 'package:here/widget/post_widget.dart'; 
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
