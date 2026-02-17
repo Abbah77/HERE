@@ -17,7 +17,7 @@ dependencies:
   provider: ^6.1.2        # Updated to latest Provider
   
   # UI & Styling
-  google_fonts: ^6.1.0    # Latest with better performance
+  google_fonts: 6.1.0    # Latest with better performance
   
   # Networking
   http: ^1.2.1            # Major update with better features
