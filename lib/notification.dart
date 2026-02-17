@@ -146,8 +146,6 @@ class NotificationAppBar extends StatelessWidget implements PreferredSizeWidget 
   }
 }
 
-// --- HELPER WIDGETS START HERE ---
-
 class NotificationTile extends StatelessWidget {
   final NotificationItem item;
   final VoidCallback onTap;
@@ -161,8 +159,9 @@ class NotificationTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: item.isRead ? Colors.transparent : Colors.orange.withValues(alpha: 0.04),
-          border: Border(bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.1))),
+          // FIXED: Changed withValues to withOpacity
+          color: item.isRead ? Colors.transparent : Colors.orange.withOpacity(0.04),
+          border: Border(bottom: BorderSide(color: Colors.grey.withOpacity(0.1))),
         ),
         child: Row(
           children: [
