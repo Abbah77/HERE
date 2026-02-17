@@ -181,7 +181,6 @@ class _ConnectionsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIX: Added the required 'role' parameter to satisfy the Connection model
     final List<Connection> mockConnections = [
       const Connection(
         id: '1', 
@@ -289,7 +288,8 @@ class _SoundByteCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        // FIXED: Changed withValues to withOpacity
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -381,7 +381,8 @@ class _TimelineNode extends StatelessWidget {
         height: 60,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
+          // FIXED: Changed withValues to withOpacity
+          border: Border.all(color: color.withOpacity(0.3), width: 2),
           image: const DecorationImage(
             image: NetworkImage('https://i.pravatar.cc/100'), 
             fit: BoxFit.cover,
