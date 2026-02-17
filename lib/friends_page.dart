@@ -5,7 +5,7 @@ import 'package:here/providers/auth_provider.dart';
 // Note: Ensure these providers are correctly defined in your main.dart
 // import 'package:here/providers/friends_provider.dart'; 
 import 'package:here/widget/friend_request_card.dart';
-import 'package:here/widget/friend_tile.dart';
+import 'package:here/widget/friend_title.dart';
 import 'package:here/widget/suggestion_card.dart';
 import 'package:here/profile.dart';
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:here/providers/auth_provider.dart';
 import 'package:here/main_navigation.dart'; // We'll create this next
-import 'package:here/login.dart';
+import 'package:here/auth_page.dart';
 
 class AuthChecker extends StatelessWidget {
   const AuthChecker({super.key});
