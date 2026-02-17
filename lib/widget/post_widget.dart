@@ -68,7 +68,8 @@ class PostWidget extends StatelessWidget {
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.2), width: 2),
+        // FIXED: Changed withValues to withOpacity
+        border: Border.all(color: Colors.orange.withOpacity(0.2), width: 2),
       ),
       child: CircleAvatar(
         radius: 24,
@@ -79,7 +80,6 @@ class PostWidget extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    // Exhaustive switch: No default case needed if all PostTypes are handled
     return switch (post.type) {
       PostType.text => _buildTextContent(),
       PostType.image => _buildImageContent(),
@@ -198,7 +198,8 @@ class PostWidget extends StatelessWidget {
                     height: 220, width: double.infinity, fit: BoxFit.cover),
               ),
               CircleAvatar(
-                backgroundColor: Colors.black.withValues(alpha: 0.4),
+                // FIXED: Changed withValues to withOpacity
+                backgroundColor: Colors.black.withOpacity(0.4),
                 radius: 30,
                 child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
               ),
