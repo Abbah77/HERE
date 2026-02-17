@@ -8,8 +8,23 @@ import 'package:here/widget/story_widget.dart';
 import 'package:here/providers/post_provider.dart';
 import 'package:here/providers/story_provider.dart'; 
 
-class MainPage extends StatelessWidget {
+class MainPage extends StatefulWidget {
   const MainPage({super.key});
+
+  @override
+  State<MainPage> createState() => _MainPageState();
+}
+
+class _MainPageState extends State<MainPage> {
+  @override
+  void initState() {
+    super.initState();
+
+    Future.microtask(() {
+      context.read<PostProvider>().loadPosts();
+      context.read<StoryProvider>().loadStories();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
