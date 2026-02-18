@@ -12,18 +12,16 @@ class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
   @override
-  // FIXED: Pointing to the public State class
   State<MainPage> createState() => MainPageState();
 }
 
-// FIXED: Removed underscore to make this class visible to GlobalKey<MainPageState>
 class MainPageState extends State<MainPage> {
-  // Logic: Controller to handle the "Tap to Top" feature
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    // Logic: Fetch data without blocking the UI rendering
     Future.microtask(() {
       if (mounted) {
         context.read<PostProvider>().loadPosts();
@@ -38,12 +36,12 @@ class MainPageState extends State<MainPage> {
     super.dispose();
   }
 
-  // FIXED: This method is called by MainNavigation via GlobalKey
+  /// Called by MainNavigation via GlobalKey to scroll the list to the top
   void scrollToTop() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         0,
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 600),
         curve: Curves.easeOutQuart,
       );
     }
@@ -58,7 +56,6 @@ class MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    // FIXED: Using surface instead of deprecated background
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -68,19 +65,20 @@ class MainPageState extends State<MainPage> {
         edgeOffset: 110,
         color: colors.primary,
         child: CustomScrollView(
-          // FIXED: Attaching the controller
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             _buildSliverAppBar(context, colors),
             
+            // Stories Section
             const SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.only(top: 8.0),
+                padding: EdgeInsets.symmetric(vertical: 8.0),
                 child: StoryWidget(),
               ),
             ),
 
+            // Posts Feed
             Consumer<PostProvider>(
               builder: (context, provider, _) {
                 if (provider.isLoading && provider.posts.isEmpty) {
@@ -95,15 +93,14 @@ class MainPageState extends State<MainPage> {
 
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return PostWidget(post: provider.posts[index]);
-                    },
+                    (context, index) => PostWidget(post: provider.posts[index]),
                     childCount: provider.posts.length,
                   ),
                 );
               },
             ),
             
+            // Bottom Spacing for Navigation Bar
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
@@ -120,9 +117,19 @@ class MainPageState extends State<MainPage> {
       elevation: 0,
       centerTitle: false,
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.bubble_chart, color: colors.primary, size: 28),
+          // BRAND LOGO
+          Image.asset(
+            'images/logo.png',
+            height: 28,
+            width: 28,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => 
+                Icon(Icons.bubble_chart, color: colors.primary, size: 28),
+          ),
           const SizedBox(width: 10),
+          // BRAND TEXT
           Text(
             'Here',
             style: GoogleFonts.plusJakartaSans(
@@ -151,7 +158,6 @@ class MainPageState extends State<MainPage> {
             margin: const EdgeInsets.only(right: 16, left: 8),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              // FIXED: Using surfaceContainerHighest instead of deprecated surfaceVariant
               color: colors.onSurface.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
