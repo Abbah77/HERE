@@ -127,7 +127,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
     {
-      'id': '102',
+      'id': '103',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -138,7 +138,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '104',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -149,7 +149,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '105',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -160,7 +160,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '106',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -171,7 +171,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '107',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -182,7 +182,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
   {
-      'id': '102',
+      'id': '108',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -193,7 +193,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '109',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -204,7 +204,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '110',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -215,7 +215,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '111',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -226,7 +226,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '112',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -237,7 +237,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '113',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -248,7 +248,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '114',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -259,7 +259,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
   {
-      'id': '102',
+      'id': '115',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
@@ -270,7 +270,7 @@ class StoryProvider with ChangeNotifier {
       'isMyStory': false,
     },
    {
-      'id': '102',
+      'id': '116',
       'userId': 'friend_1',
       'userName': 'Emma Watson',
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
