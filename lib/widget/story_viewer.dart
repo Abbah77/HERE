@@ -26,8 +26,10 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: widget.initialStoryIndex);
+    // Initialize stories from provider immediately
+    _userStories = context.read<StoryProvider>().getStoriesByUser(widget.userId);
     _currentIndex = widget.initialStoryIndex;
+    _pageController = PageController(initialPage: widget.initialStoryIndex);
     
     _progressController = AnimationController(
       vsync: this,
@@ -39,27 +41,24 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         _nextStory();
       }
     });
+
+    // Rule: Mark stories as viewed as soon as the viewer opens
+    _markAsViewed();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final storyProvider = Provider.of<StoryProvider>(context);
-    _userStories = storyProvider.getStoriesByUser(widget.userId);
+  // Logic: Tells the provider to turn the ring grey for this user
+  void _markAsViewed() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<StoryProvider>().markUserStoriesAsViewed(widget.userId);
+    });
   }
 
   void _nextStory() {
     if (_currentIndex < _userStories.length - 1) {
-      setState(() {
-        _currentIndex++;
-        _pageController.animateToPage(
-          _currentIndex,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        _progressController.reset();
-        _progressController.forward();
-      });
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       Navigator.of(context).pop();
     }
@@ -67,16 +66,10 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
 
   void _previousStory() {
     if (_currentIndex > 0) {
-      setState(() {
-        _currentIndex--;
-        _pageController.animateToPage(
-          _currentIndex,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        _progressController.reset();
-        _progressController.forward();
-      });
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     } else {
       Navigator.of(context).pop();
     }
@@ -95,11 +88,11 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
     final story = _userStories[_currentIndex];
     
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: Colors.black, // Stories look best on pure black
       body: GestureDetector(
         onTapDown: (details) {
           final screenWidth = MediaQuery.of(context).size.width;
-          if (details.globalPosition.dx < screenWidth / 2) {
+          if (details.globalPosition.dx < screenWidth / 3) {
             _previousStory();
           } else {
             _nextStory();
@@ -107,7 +100,7 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
         },
         child: Stack(
           children: [
-            // Story content
+            // 1. Story Content
             PageView.builder(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
@@ -119,38 +112,37 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                   _progressController.forward();
                 });
               },
-              itemBuilder: (context, index) {
-                final currentStory = _userStories[index];
-                return _buildStoryContent(currentStory, colors);
-              },
+              itemBuilder: (context, index) => _buildStoryContent(_userStories[index], colors),
             ),
             
-            // Progress bars
+            // 2. Progress Indicators
             Positioned(
-              top: 48,
-              left: 16,
-              right: 16,
+              top: MediaQuery.of(context).padding.top + 10,
+              left: 10,
+              right: 10,
               child: Row(
                 children: List.generate(_userStories.length, (index) {
                   return Expanded(
                     child: Container(
-                      height: 2,
+                      height: 2.5,
                       margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: index == _currentIndex
                           ? AnimatedBuilder(
                               animation: _progressController,
                               builder: (context, child) {
                                 return LinearProgressIndicator(
                                   value: _progressController.value,
-                                  backgroundColor: colors.onSurface.withOpacity(0.3),
-                                  valueColor: AlwaysStoppedAnimation<Color>(colors.onSurface),
+                                  backgroundColor: Colors.transparent,
+                                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                                 );
                               },
                             )
                           : Container(
-                              color: index < _currentIndex
-                                  ? colors.onSurface
-                                  : colors.onSurface.withOpacity(0.3),
+                              color: index < _currentIndex ? Colors.white : Colors.transparent,
                             ),
                     ),
                   );
@@ -158,21 +150,16 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
               ),
             ),
             
-            // User info
+            // 3. User Header
             Positioned(
-              top: 68,
+              top: MediaQuery.of(context).padding.top + 25,
               left: 16,
               right: 16,
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 20,
+                    radius: 18,
                     backgroundImage: NetworkImage(story.userImage),
-                    backgroundColor: colors.surfaceContainerHighest,
-                    onBackgroundImageError: (_, __) => Icon(
-                      Icons.person,
-                      color: colors.onSurface,
-                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -181,27 +168,17 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
                       children: [
                         Text(
                           story.userName,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: colors.onSurface,
-                          ),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                         ),
                         Text(
                           _getTimeAgo(story.timestamp),
-                          style: TextStyle(
-                            color: colors.onSurface.withOpacity(0.7),
-                            fontSize: 12,
-                          ),
+                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: Icon(
-                      Icons.close,
-                      color: colors.onSurface,
-                    ),
+                    icon: const Icon(Icons.close, color: Colors.white),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -216,71 +193,26 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   Widget _buildStoryContent(Story story, ColorScheme colors) {
     switch (story.mediaType) {
       case StoryMediaType.image:
-        return SizedBox(
+        return Image.network(
+          story.mediaUrl,
+          fit: BoxFit.cover,
           width: double.infinity,
           height: double.infinity,
-          child: Image.network(
-            story.mediaUrl,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                color: colors.surfaceContainerHighest,
-                child: Center(
-                  child: Icon(
-                    Icons.broken_image,
-                    size: 64,
-                    color: colors.onSurface.withOpacity(0.5),
-                  ),
-                ),
-              );
-            },
-          ),
         );
-        
       case StoryMediaType.video:
         return Container(
-          color: colors.surfaceContainerHighest,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.play_circle_filled,
-                  size: 64,
-                  color: colors.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  story.caption ?? 'Video Story',
-                  style: TextStyle(
-                    color: colors.onSurface,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          color: Colors.black,
+          child: const Center(child: Icon(Icons.play_circle_outline, color: Colors.white, size: 80)),
         );
-        
       case StoryMediaType.text:
         return Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: story.color != null
-              ? Color(int.parse(story.color!.replaceAll('#', '0xFF')))
-              : colors.primary,
+          color: story.color != null ? Color(int.parse(story.color!)) : colors.primary,
+          padding: const EdgeInsets.all(40),
           child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                story.caption ?? '',
-                style: TextStyle(
-                  color: colors.onPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
+            child: Text(
+              story.caption ?? '',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
             ),
           ),
         );
@@ -288,17 +220,10 @@ class _StoryViewerState extends State<StoryViewer> with TickerProviderStateMixin
   }
 
   String _getTimeAgo(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-    
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
-    } else {
-      return '${difference.inDays}d ago';
-    }
+    final diff = DateTime.now().difference(timestamp);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 }
