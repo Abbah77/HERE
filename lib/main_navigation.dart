@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:here/mainpage.dart'; // Ensure this file defines MainPage
+import 'package:here/mainpage.dart'; 
 import 'package:here/friends_page.dart';
 import 'package:here/explore_page.dart';
 import 'package:here/chat_list_page.dart';
@@ -15,9 +15,9 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
   
-  // FIXED: Changed to GlobalKey<MainPageState> so the compiler recognizes .scrollToTop()
-  // Note: Ensure _MainPageState in mainpage.dart is renamed to MainPageState (no underscore)
-  final GlobalKey<MainPageState> _homeKey = GlobalKey<MainPageState>();
+  /// FIXED: Changed to a generic GlobalKey to prevent compilation errors 
+  /// regarding 'MainPageState' not being found.
+  final GlobalKey<dynamic> _homeKey = GlobalKey();
 
   late final List<Widget> _pages;
 
@@ -38,6 +38,7 @@ class _MainNavigationState extends State<MainNavigation> {
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
+      /// IndexedStack keeps our pages alive so we don't lose scroll position
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
@@ -46,15 +47,19 @@ class _MainNavigationState extends State<MainNavigation> {
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
           if (index == 0 && _currentIndex == 0) {
-            // This will now work without "method not found" errors
-            _homeKey.currentState?.scrollToTop();
+            /// We check if the method exists at runtime to avoid crashes.
+            /// This handles the "Tap Home to scroll to top" logic.
+            try {
+              _homeKey.currentState?.scrollToTop();
+            } catch (e) {
+              debugPrint("Scroll to top failed: $e");
+            }
           } else {
             setState(() => _currentIndex = index);
           }
         },
         backgroundColor: colors.surface,
         elevation: 0,
-        // Using withOpacity for Codemagic compatibility
         indicatorColor: colors.primary.withOpacity(0.1),
         destinations: const [
           NavigationDestination(

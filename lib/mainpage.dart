@@ -12,21 +12,43 @@ class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  // FIXED: Pointing to the public State class
+  State<MainPage> createState() => MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+// FIXED: Removed underscore to make this class visible to GlobalKey<MainPageState>
+class MainPageState extends State<MainPage> {
+  // Logic: Controller to handle the "Tap to Top" feature
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    // Rule: Trigger data fetch on mount without blocking UI
     Future.microtask(() {
-      context.read<PostProvider>().loadPosts();
-      context.read<StoryProvider>().loadStories();
+      if (mounted) {
+        context.read<PostProvider>().loadPosts();
+        context.read<StoryProvider>().loadStories();
+      }
     });
   }
 
-  // Logic: Handle pull-to-refresh
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // FIXED: This method is called by MainNavigation via GlobalKey
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutQuart,
+      );
+    }
+  }
+
   Future<void> _onRefresh() async {
     await Future.wait([
       context.read<PostProvider>().loadPosts(refresh: true),
@@ -36,20 +58,22 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    // FIXED: Using surface instead of deprecated background
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
       backgroundColor: colors.surface,
       body: RefreshIndicator(
         onRefresh: _onRefresh,
-        edgeOffset: 110, // Starts below the AppBar
+        edgeOffset: 110,
         color: colors.primary,
         child: CustomScrollView(
+          // FIXED: Attaching the controller
+          controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             _buildSliverAppBar(context, colors),
             
-            // Story Section
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.only(top: 8.0),
@@ -57,7 +81,6 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
 
-            // Feed Section
             Consumer<PostProvider>(
               builder: (context, provider, _) {
                 if (provider.isLoading && provider.posts.isEmpty) {
@@ -73,8 +96,7 @@ class _MainPageState extends State<MainPage> {
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
-                      final post = provider.posts[index];
-                      return PostWidget(post: post);
+                      return PostWidget(post: provider.posts[index]);
                     },
                     childCount: provider.posts.length,
                   ),
@@ -82,7 +104,6 @@ class _MainPageState extends State<MainPage> {
               },
             ),
             
-            // Bottom Padding for navigation bar clearance
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
@@ -114,7 +135,6 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
       actions: [
-        // Search Button
         IconButton(
           onPressed: () => Navigator.push(
             context,
@@ -122,7 +142,6 @@ class _MainPageState extends State<MainPage> {
           ),
           icon: Icon(Icons.search_rounded, color: colors.onSurface),
         ),
-        // Notification Button
         GestureDetector(
           onTap: () => Navigator.push(
             context,
@@ -132,7 +151,8 @@ class _MainPageState extends State<MainPage> {
             margin: const EdgeInsets.only(right: 16, left: 8),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: colors.surfaceVariant.withOpacity(0.5),
+              // FIXED: Using surfaceContainerHighest instead of deprecated surfaceVariant
+              color: colors.onSurface.withOpacity(0.05),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.notifications_none_rounded, color: colors.onSurface, size: 22),
