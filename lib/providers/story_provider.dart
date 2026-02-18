@@ -15,10 +15,10 @@ class StoryProvider with ChangeNotifier {
   bool get isLoading => _status == StoryStatus.loading;
   bool get hasError => _status == StoryStatus.error;
 
-  // --- NEW: ADD STORY LOGIC (Fixes Codemagic Error) ---
-  
-  /// Rule: Adds a new story to the local list and notifies listeners.
-  /// Returns true if successful.
+  // --- BUSINESS LOGIC ---
+
+  /// Rule: Adds a new story and updates the UI immediately.
+  /// Fixed: Changed 'createdAt' to 'timestamp' to match your Story model.
   Future<bool> addStory({
     required String mediaUrl,
     required StoryMediaType mediaType,
@@ -26,22 +26,20 @@ class StoryProvider with ChangeNotifier {
     required String color,
   }) async {
     try {
-      // Create the new story object
       final newStory = Story(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user', // Matches mock data ID
+        userId: 'current_user',
         userName: 'Allan Paterson', 
         userImage: 'https://cdn.now.howstuffworks.com/media-content/0b7f4e9b-f59c-4024-9f06-b3dc12850ab7-1920-1080.jpg',
         mediaUrl: mediaUrl,
         mediaType: mediaType,
         caption: caption,
         color: color,
-        createdAt: DateTime.now(), // Use createdAt to match model
-        isViewed: true, // Your own stories are seen by you immediately
+        timestamp: DateTime.now(), // Fixed field name
+        isViewed: true, 
         isMyStory: true,
       );
 
-      // Add to beginning of list
       _stories.insert(0, newStory);
       notifyListeners();
       return true;
@@ -51,8 +49,8 @@ class StoryProvider with ChangeNotifier {
     }
   }
 
-  // --- BUSINESS LOGIC ---
-
+  /// Rule: Groups stories by user. 
+  /// Fixed: Updated sorting logic to use 'timestamp'.
   List<MapEntry<String, List<Story>>> getStoriesGroupedByUser() {
     final Map<String, List<Story>> grouped = {};
 
@@ -60,13 +58,14 @@ class StoryProvider with ChangeNotifier {
       grouped.putIfAbsent(story.userId, () => []).add(story);
     }
 
-    // Sort individual user story stacks by time (newest first)
+    // Sort individual user story stacks (newest first)
     for (var list in grouped.values) {
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     }
 
     final entries = grouped.entries.toList();
 
+    // Prioritize My Story, then sort by latest activity
     entries.sort((a, b) {
       final aFirst = a.value.first;
       final bFirst = b.value.first;
@@ -74,7 +73,7 @@ class StoryProvider with ChangeNotifier {
       if (aFirst.isMyStory) return -1;
       if (bFirst.isMyStory) return 1;
       
-      return bFirst.createdAt.compareTo(aFirst.createdAt);
+      return bFirst.timestamp.compareTo(aFirst.timestamp);
     });
 
     return entries;
@@ -98,9 +97,10 @@ class StoryProvider with ChangeNotifier {
     }
   }
 
+  /// Rule: Used by the Story Viewer to play sequence.
   List<Story> getStoriesByUser(String userId) {
     return _stories.where((story) => story.userId == userId).toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
   }
 
   void markUserStoriesAsViewed(String userId) {
@@ -129,7 +129,7 @@ class StoryProvider with ChangeNotifier {
       'userImage': 'https://cdn.now.howstuffworks.com/media-content/0b7f4e9b-f59c-4024-9f06-b3dc12850ab7-1920-1080.jpg',
       'mediaUrl': 'https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg',
       'mediaType': 'image',
-      'createdAt': DateTime.now().subtract(const Duration(minutes: 10)).toIso8601String(),
+      'timestamp': DateTime.now().subtract(const Duration(minutes: 10)).toIso8601String(),
       'isViewed': false,
       'isMyStory': true,
     },
@@ -140,7 +140,7 @@ class StoryProvider with ChangeNotifier {
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
       'mediaUrl': 'https://images.pexels.com/photos/4264555/pexels-photo-4264555.jpeg',
       'mediaType': 'image',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+      'timestamp': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
       'isViewed': false,
       'isMyStory': false,
     },
@@ -153,7 +153,7 @@ class StoryProvider with ChangeNotifier {
       'mediaType': 'text',
       'caption': 'Working on something big! 🎬',
       'color': '0xFFFF6B6B',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
+      'timestamp': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
       'isViewed': true,
       'isMyStory': false,
     },
