@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/story_provider.dart';
-import 'story_viewer.dart';
+import 'package:provider/provider.dart';
+import 'package:here/providers/story_provider.dart';
+import 'package:here/widget/story_viewer.dart';
+// Ensure this file exists at this EXACT location relative to lib
+import 'package:here/create_story_page.dart'; 
 
 class StoryWidget extends StatelessWidget {
   const StoryWidget({super.key});
@@ -11,27 +13,21 @@ class StoryWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
-    return SizedBox(
-      height: 120,
-      child: Consumer<StoryProvider>(
-        builder: (context, storyProvider, _) {
-          if (storyProvider.isLoading) {
-            return Center(child: CircularProgressIndicator(color: colors.primary));
-          }
+    return Consumer<StoryProvider>(
+      builder: (context, storyProvider, child) {
+        if (storyProvider.isLoading && storyProvider.stories.isEmpty) {
+          return const _LoadingSkeleton();
+        }
 
-          if (!storyProvider.hasStories) {
-            return Center(
-              child: Text(
-                'No stories available.',
-                style: TextStyle(color: colors.onSurface.withOpacity(0.7)),
-              ),
-            );
-          }
+        // Logic: Group stories by user to avoid duplicate circles
+        final groupedStories = storyProvider.getStoriesGroupedByUser();
 
-          final groupedStories = storyProvider.getStoriesGroupedByUser();
-
-          return ListView.builder(
+        return Container(
+          height: 110,
+          color: colors.surface,
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             itemCount: groupedStories.length,
             itemBuilder: (context, index) {
               final entry = groupedStories[index];
@@ -40,85 +36,92 @@ class StoryWidget extends StatelessWidget {
               final firstStory = userStories.first;
               final hasUnviewed = storyProvider.hasUnviewedStories(userId);
 
-              return _buildStoryAvatar(
-                context,
-                colors: colors,
-                userImage: firstStory.userImage,
+              return _StoryCircle(
+                userId: userId,
                 userName: firstStory.userName,
-                isMyStory: firstStory.isMyStory,
+                userImage: firstStory.userImage,
                 hasUnviewed: hasUnviewed,
+                isMyStory: firstStory.isMyStory,
                 onTap: () {
-                  if (firstStory.isMyStory) {
-                    if (userStories.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => StoryViewer(userId: userId, initialStoryIndex: 0),
-                        ),
-                      );
-                    } else {
-                      Navigator.pushNamed(context, '/createStoryPage');
-                    }
-                  } else {
-                    storyProvider.markUserStoriesAsViewed(userId);
+                  if (firstStory.isMyStory && !hasUnviewed) {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => StoryViewer(userId: userId, initialStoryIndex: 0),
-                      ),
+                      MaterialPageRoute(builder: (_) => const CreateStoryPage()),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => StoryViewer(userId: userId)),
                     );
                   }
                 },
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildStoryAvatar(
-    BuildContext context, {
-    required ColorScheme colors,
-    required String userImage,
-    required String userName,
-    required bool isMyStory,
-    required bool hasUnviewed,
-    required VoidCallback onTap,
-  }) {
+class _StoryCircle extends StatelessWidget {
+  final String userId;
+  final String userName;
+  final String userImage;
+  final bool hasUnviewed;
+  final bool isMyStory;
+  final VoidCallback onTap;
+
+  const _StoryCircle({
+    required this.userId,
+    required this.userName,
+    required this.userImage,
+    required this.hasUnviewed,
+    required this.isMyStory,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 80,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
+        margin: const EdgeInsets.only(right: 16),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Stack(
-              clipBehavior: Clip.none,
               children: [
-                // Story ring
                 Container(
-                  height: 71,
-                  width: 71,
-                  margin: const EdgeInsets.only(top: 5),
+                  padding: const EdgeInsets.all(2.5),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: hasUnviewed ? colors.primary : colors.outline,
-                      width: hasUnviewed ? 3 : 2,
-                    ),
+                    gradient: hasUnviewed
+                        ? LinearGradient(
+                            colors: [colors.primary, colors.tertiary, colors.secondary],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
+                        : null,
+                    border: !hasUnviewed 
+                        ? Border.all(color: colors.outlineVariant.withOpacity(0.5), width: 1) 
+                        : null,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(2.0),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: colors.surface,
+                      shape: BoxShape.circle,
+                    ),
                     child: CircleAvatar(
+                      radius: 28,
+                      backgroundColor: colors.surface,
                       backgroundImage: NetworkImage(userImage),
-                      radius: 30,
-                      onBackgroundImageError: (_, __) => Icon(Icons.person, color: colors.onSurface),
                     ),
                   ),
                 ),
-                if (isMyStory)
+                if (isMyStory && !hasUnviewed)
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -128,27 +131,44 @@ class StoryWidget extends StatelessWidget {
                         shape: BoxShape.circle,
                         border: Border.all(color: colors.surface, width: 2),
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.all(3.0),
-                        child: Icon(Icons.add, size: 16, color: Colors.white),
-                      ),
+                      child: const Icon(Icons.add, size: 18, color: Colors.white),
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
-              userName.split(' ').first,
-              style: GoogleFonts.lato(
-                color: colors.onSurface.withOpacity(0.8),
-                fontSize: 12,
-                fontWeight: hasUnviewed ? FontWeight.bold : FontWeight.normal,
+              isMyStory ? 'You' : userName.split(' ').first,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: hasUnviewed ? FontWeight.bold : FontWeight.w500,
+                color: hasUnviewed ? colors.onSurface : colors.onSurfaceVariant,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _LoadingSkeleton extends StatelessWidget {
+  const _LoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      height: 110,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: List.generate(5, (index) => Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: CircleAvatar(
+            radius: 32, 
+            backgroundColor: colors.onSurface.withOpacity(0.05)
+          ),
+        )),
       ),
     );
   }

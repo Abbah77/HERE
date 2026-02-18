@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../models/post.dart';
-import '../providers/post_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:here/models/post.dart';
+import 'package:here/models/post_type.dart';
+import 'package:here/providers/post_provider.dart';
 
+// FIXED: Renamed from PostCard to PostWidget to match your other files
 class PostWidget extends StatelessWidget {
   final Post post;
   final bool showActions;
@@ -19,38 +21,41 @@ class PostWidget extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 12),
+      margin: const EdgeInsets.only(bottom: 8),
+      color: colors.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(colors),
-          const SizedBox(height: 12),
-          _buildContent(colors),
+          _PostHeader(post: post), 
+          const SizedBox(height: 8),
+          _PostBody(post: post),   
           if (showActions) ...[
-            const SizedBox(height: 16),
-            _buildActions(context, colors),
+            const SizedBox(height: 12),
+            _PostFooter(post: post), 
           ],
-          Divider(
-            height: 32,
-            thickness: 0.5,
-            indent: 20,
-            endIndent: 20,
-            color: colors.outline,
-          ),
+          const SizedBox(height: 12),
+          Divider(height: 1, thickness: 0.5, color: colors.outlineVariant.withOpacity(0.5)),
         ],
       ),
     );
   }
+}
 
-  Widget _buildHeader(ColorScheme colors) {
+// --- HEADER ---
+class _PostHeader extends StatelessWidget {
+  final Post post;
+  const _PostHeader({required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
           CircleAvatar(
-            radius: 24,
+            radius: 20,
             backgroundImage: NetworkImage(post.userProfileImage),
-            onBackgroundImageError: (_, __) => Icon(Icons.person, color: colors.onSurface),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -61,151 +66,197 @@ class PostWidget extends StatelessWidget {
                   post.userName,
                   style: GoogleFonts.plusJakartaSans(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: colors.onSurface,
+                    fontSize: 15,
                   ),
                 ),
                 Text(
-                  post.timeAgo,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    color: colors.onSurface.withOpacity(0.6),
-                  ),
+                  // Using DateTime formatting or post.createdAt.toString()
+                  "${post.createdAt.day}/${post.createdAt.month}/${post.createdAt.year}",
+                  style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant),
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_horiz),
+            onPressed: () {},
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildContent(ColorScheme colors) {
-    if (post.content.isEmpty && (post.imageUrl == null && post.imageUrls == null)) {
-      return const SizedBox.shrink();
-    }
+// --- BODY ---
+class _PostBody extends StatelessWidget {
+  final Post post;
+  const _PostBody({required this.post});
 
+  @override
+  Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (post.content.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Text(
               post.content,
-              style: GoogleFonts.lato(color: colors.onSurface.withOpacity(0.8), fontSize: 15, height: 1.5),
+              style: GoogleFonts.plusJakartaSans(fontSize: 14, height: 1.4),
             ),
           ),
-        if (post.imageUrl != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(post.imageUrl!, fit: BoxFit.cover),
-            ),
-          ),
-        if (post.imageUrls != null && post.imageUrls!.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-            child: _buildMultiImage(post.imageUrls!, colors),
-          ),
+        const SizedBox(height: 8),
+        _buildMediaContent(context),
       ],
     );
   }
 
-  Widget _buildMultiImage(List<String> images, ColorScheme colors) {
-    if (images.isEmpty) return const SizedBox.shrink();
+  Widget _buildMediaContent(BuildContext context) {
+    switch (post.type) {
+      case PostType.image:
+        return _ImageMedia(url: post.imageUrl!);
+      case PostType.multiImage:
+        return _MultiImageMedia(urls: post.imageUrls!);
+      case PostType.video:
+        return _VideoPlaceholder(url: post.imageUrl!);
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}
 
-    return SizedBox(
-      height: 280,
-      child: Row(
+// --- FOOTER ---
+class _PostFooter extends StatelessWidget {
+  final Post post;
+  const _PostFooter({required this.post});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final provider = context.read<PostProvider>();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
         children: [
-          Expanded(flex: 3, child: _buildRoundedImage(images[0], isLeft: true)),
-          if (images.length > 1) ...[
-            const SizedBox(width: 4),
-            Expanded(
-              flex: 2,
-              child: Column(
-                children: [
-                  Expanded(child: _buildRoundedImage(images[1], isTopRight: true)),
-                  const SizedBox(height: 4),
-                  Expanded(
-                    child: images.length > 2 ? _buildRoundedImage(images[2], isBottomRight: true) : const SizedBox.shrink(),
-                  ),
-                ],
+          Row(
+            children: [
+              Icon(Icons.thumb_up_alt_rounded, size: 14, color: colors.primary),
+              const SizedBox(width: 4),
+              Text('${post.likes}', style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
+              const Spacer(),
+              Text('${post.comments} comments • ${post.shares} shares', 
+                style: TextStyle(fontSize: 12, color: colors.onSurfaceVariant)),
+            ],
+          ),
+          const Divider(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _ActionBtn(
+                icon: post.isLiked ? Icons.thumb_up_alt_rounded : Icons.thumb_up_off_alt, 
+                label: 'Like', 
+                active: post.isLiked,
+                onTap: () => provider.toggleLike(post.id),
               ),
-            ),
-          ],
+              _ActionBtn(icon: Icons.chat_bubble_outline, label: 'Comment', onTap: () {}),
+              _ActionBtn(icon: Icons.share_outlined, label: 'Share', onTap: () {}),
+            ],
+          ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildRoundedImage(String url, {bool isLeft = false, bool isTopRight = false, bool isBottomRight = false}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(isLeft ? 16 : 0),
-        bottomLeft: Radius.circular(isLeft ? 16 : 0),
-        topRight: Radius.circular(isTopRight ? 16 : 0),
-        bottomRight: Radius.circular(isBottomRight ? 16 : 0),
+// --- MEDIA HELPERS ---
+
+class _ImageMedia extends StatelessWidget {
+  final String url;
+  const _ImageMedia({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    // FIXED: Image.network doesn't take constraints. Wrapped in Container.
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 500),
+      width: double.infinity,
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
       ),
-      child: Image.network(url, fit: BoxFit.cover, width: double.infinity, height: double.infinity),
     );
   }
+}
 
-  Widget _buildActions(BuildContext context, ColorScheme colors) {
-    return Consumer<PostProvider>(
-      builder: (context, provider, _) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              _ActionButton(
-                icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
-                label: '${post.likes}',
-                color: post.isLiked ? colors.primary : colors.onSurface.withOpacity(0.6),
-                onTap: () => provider.toggleLike(post.id),
-              ),
-              const SizedBox(width: 24),
-              _ActionButton(
-                icon: Icons.chat_bubble_outline,
-                label: '${post.comments}',
-                color: colors.onSurface.withOpacity(0.6),
-                onTap: () {},
-              ),
-              const Spacer(),
-              Icon(Icons.share_outlined, color: colors.onSurface.withOpacity(0.6), size: 20),
-            ],
-          ),
-        );
+class _MultiImageMedia extends StatelessWidget {
+  final List<String> urls;
+  const _MultiImageMedia({required this.urls});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: urls.length > 4 ? 4 : urls.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 2,
+        mainAxisSpacing: 2,
+      ),
+      itemBuilder: (context, index) {
+        return Image.network(urls[index], fit: BoxFit.cover);
       },
     );
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _VideoPlaceholder extends StatelessWidget {
+  final String url;
+  const _VideoPlaceholder({required this.url});
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Image.network(url, fit: BoxFit.cover, width: double.infinity),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(color: Colors.black38, shape: BoxShape.circle),
+            child: const Icon(Icons.play_arrow, color: Colors.white, size: 40),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionBtn extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final bool active;
   final VoidCallback onTap;
-
-  const _ActionButton({
-    required this.icon,
-    required this.label,
-    required this.color,
+  
+  const _ActionBtn({
+    required this.icon, 
+    required this.label, 
     required this.onTap,
+    this.active = false
   });
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final color = active ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant;
     return GestureDetector(
       onTap: onTap,
       child: Row(
         children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: colors.onSurface.withOpacity(0.7), fontWeight: FontWeight.bold, fontSize: 14)),
+          Icon(icon, size: 20, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13)),
         ],
       ),
     );
