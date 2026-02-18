@@ -15,9 +15,44 @@ class StoryProvider with ChangeNotifier {
   bool get isLoading => _status == StoryStatus.loading;
   bool get hasError => _status == StoryStatus.error;
 
+  // --- NEW: ADD STORY LOGIC (Fixes Codemagic Error) ---
+  
+  /// Rule: Adds a new story to the local list and notifies listeners.
+  /// Returns true if successful.
+  Future<bool> addStory({
+    required String mediaUrl,
+    required StoryMediaType mediaType,
+    required String caption,
+    required String color,
+  }) async {
+    try {
+      // Create the new story object
+      final newStory = Story(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: 'current_user', // Matches mock data ID
+        userName: 'Allan Paterson', 
+        userImage: 'https://cdn.now.howstuffworks.com/media-content/0b7f4e9b-f59c-4024-9f06-b3dc12850ab7-1920-1080.jpg',
+        mediaUrl: mediaUrl,
+        mediaType: mediaType,
+        caption: caption,
+        color: color,
+        createdAt: DateTime.now(), // Use createdAt to match model
+        isViewed: true, // Your own stories are seen by you immediately
+        isMyStory: true,
+      );
+
+      // Add to beginning of list
+      _stories.insert(0, newStory);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      debugPrint('Error adding story: $e');
+      return false;
+    }
+  }
+
   // --- BUSINESS LOGIC ---
 
-  /// Rule: Returns stories grouped by user, ensuring 'Your Story' is always index 0.
   List<MapEntry<String, List<Story>>> getStoriesGroupedByUser() {
     final Map<String, List<Story>> grouped = {};
 
@@ -27,12 +62,11 @@ class StoryProvider with ChangeNotifier {
 
     // Sort individual user story stacks by time (newest first)
     for (var list in grouped.values) {
-      list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     }
 
     final entries = grouped.entries.toList();
 
-    // Rule: Sort groups to prioritize current user, then by latest activity
     entries.sort((a, b) {
       final aFirst = a.value.first;
       final bFirst = b.value.first;
@@ -40,7 +74,7 @@ class StoryProvider with ChangeNotifier {
       if (aFirst.isMyStory) return -1;
       if (bFirst.isMyStory) return 1;
       
-      return bFirst.timestamp.compareTo(aFirst.timestamp);
+      return bFirst.createdAt.compareTo(aFirst.createdAt);
     });
 
     return entries;
@@ -53,12 +87,8 @@ class StoryProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // Rule: Simulating network delay for a smooth 'Blur-Refresh' effect
       await Future.delayed(const Duration(milliseconds: 1200));
-
-      // Using the refactored Model's factory for consistency
       _stories = _mockStoryData.map((data) => Story.fromJson(data)).toList();
-      
       _status = StoryStatus.loaded;
     } catch (e) {
       _status = StoryStatus.error;
@@ -68,13 +98,11 @@ class StoryProvider with ChangeNotifier {
     }
   }
 
-  /// Rule: Used by the Story Viewer to display a single user's sequence
   List<Story> getStoriesByUser(String userId) {
     return _stories.where((story) => story.userId == userId).toList()
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp)); // Viewer plays oldest to newest
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
   }
 
-  /// Rule: Triggers the Ring UI update (Color Gradient removal)
   void markUserStoriesAsViewed(String userId) {
     bool updated = false;
     _stories = _stories.map((story) {
@@ -93,7 +121,6 @@ class StoryProvider with ChangeNotifier {
   }
 
   // --- MOCK DATA ---
-  // Ready to be replaced by a 'Firebase/Supabase' stream later
   final List<Map<String, dynamic>> _mockStoryData = [
     {
       'id': '101',
@@ -102,7 +129,7 @@ class StoryProvider with ChangeNotifier {
       'userImage': 'https://cdn.now.howstuffworks.com/media-content/0b7f4e9b-f59c-4024-9f06-b3dc12850ab7-1920-1080.jpg',
       'mediaUrl': 'https://images.pexels.com/photos/2387873/pexels-photo-2387873.jpeg',
       'mediaType': 'image',
-      'timestamp': DateTime.now().subtract(const Duration(minutes: 10)).toIso8601String(),
+      'createdAt': DateTime.now().subtract(const Duration(minutes: 10)).toIso8601String(),
       'isViewed': false,
       'isMyStory': true,
     },
@@ -113,7 +140,7 @@ class StoryProvider with ChangeNotifier {
       'userImage': 'https://randomuser.me/api/portraits/women/44.jpg',
       'mediaUrl': 'https://images.pexels.com/photos/4264555/pexels-photo-4264555.jpeg',
       'mediaType': 'image',
-      'timestamp': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
+      'createdAt': DateTime.now().subtract(const Duration(hours: 1)).toIso8601String(),
       'isViewed': false,
       'isMyStory': false,
     },
@@ -126,19 +153,8 @@ class StoryProvider with ChangeNotifier {
       'mediaType': 'text',
       'caption': 'Working on something big! 🎬',
       'color': '0xFFFF6B6B',
-      'timestamp': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
+      'createdAt': DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
       'isViewed': true,
-      'isMyStory': false,
-    },
-    {
-      'id': '104',
-      'userId': 'friend_3',
-      'userName': 'Zendaya',
-      'userImage': 'https://randomuser.me/api/portraits/women/33.jpg',
-      'mediaUrl': 'https://images.pexels.com/photos/34950/pexels-photo.jpg',
-      'mediaType': 'image',
-      'timestamp': DateTime.now().subtract(const Duration(hours: 5)).toIso8601String(),
-      'isViewed': false,
       'isMyStory': false,
     },
   ];
