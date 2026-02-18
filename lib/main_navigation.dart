@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:here/providers/post_provider.dart';
+import 'package:here/providers/story_provider.dart';
 import 'package:here/mainpage.dart';
-import 'package:here/friends_page.dart';
-import 'package:here/explore_page.dart';
-import 'package:here/chat_list_page.dart';
-import 'package:here/profile.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -12,93 +11,76 @@ class MainNavigation extends StatefulWidget {
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
-  bool _isRefreshingHome = false; // For TikTok-style icon spinner
+class _MainNavigationState extends State<MainNavigation>
+    with SingleTickerProviderStateMixin {
+  late final MainPage _homePage;
+  bool _isRefreshing = false;
+  late final AnimationController _iconController;
 
-  // Create Home page with callback
-  late final MainPage _homePage = MainPage(onHomeIconTap: _refreshHome);
+  @override
+  void initState() {
+    super.initState();
+    _homePage = const MainPage();
+    _iconController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    );
+    _iconController.repeat(); // for spinner rotation
+  }
 
-  late final List<Widget> _pages = [
-    _homePage,           // Home
-    const FriendsPage(),  // Friends
-    const ExplorePage(),  // Explore
-    const ChatListPage(), // Chat
-    const ProfilePage(),  // Profile
-  ];
+  @override
+  void dispose() {
+    _iconController.dispose();
+    super.dispose();
+  }
 
   Future<void> _refreshHome() async {
-    if (_isRefreshingHome) return; // prevent double refresh
+    if (_isRefreshing) return;
 
-    setState(() => _isRefreshingHome = true);
+    setState(() => _isRefreshing = true);
 
-    // Trigger MainPage's refresh logic
-    if (_homePage.onHomeIconTap != null) {
-      await _homePage.onHomeIconTap!();
-    }
+    final postProvider = context.read<PostProvider>();
+    final storyProvider = context.read<StoryProvider>();
 
-    setState(() => _isRefreshingHome = false);
+    // Load stories and posts
+    await Future.wait([
+      storyProvider.loadStories(),
+      postProvider.loadPosts(refresh: true),
+    ]);
+
+    // Scroll feed to top
+    _homePage.scrollToTop();
+
+    setState(() => _isRefreshing = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-
     return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          if (_currentIndex == 0 && index == 0) {
-            // Already on Home → trigger TikTok-style refresh
-            _refreshHome();
-          } else {
-            setState(() => _currentIndex = index);
-          }
-        },
-        backgroundColor: colors.surface,
-        elevation: 0,
-        indicatorColor: colors.primary.withOpacity(0.1),
-        destinations: [
-          NavigationDestination(
-            icon: _isRefreshingHome
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
-                  )
-                : const Icon(Icons.home_outlined),
-            selectedIcon: _isRefreshingHome
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2.5),
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: _isRefreshing
+                ? RotationTransition(
+                    turns: _iconController,
+                    child: const Icon(Icons.home),
                   )
                 : const Icon(Icons.home),
             label: 'Home',
           ),
-          const NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Friends',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.explore_outlined),
-            selectedIcon: Icon(Icons.explore),
-            label: 'Explore',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            selectedIcon: Icon(Icons.chat_bubble),
-            label: 'Chat',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Search',
           ),
         ],
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 0) {
+            _refreshHome();
+          }
+        },
       ),
+      body: _homePage,
     );
   }
 }
