@@ -1,5 +1,8 @@
+import 'package:flutter/foundation.dart';
+
 enum UserStatus { online, offline, away, busy }
 
+@immutable // Good practice for Models
 class User {
   final String id;
   final String name;
@@ -39,48 +42,7 @@ class User {
     this.socialLinks = const {},
   });
 
-  // Rule: High-performance copyWith for smooth state updates
-  User copyWith({
-    String? id,
-    String? name,
-    String? email,
-    String? profileImage,
-    String? bio,
-    int? followers,
-    int? following,
-    int? posts,
-    bool? isVerified,
-    DateTime? createdAt,
-    DateTime? lastActive,
-    UserStatus? status,
-    String? phoneNumber,
-    String? website,
-    String? location,
-    List<String>? interests,
-    Map<String, dynamic>? socialLinks,
-  }) {
-    return User(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      profileImage: profileImage ?? this.profileImage,
-      bio: bio ?? this.bio,
-      followers: followers ?? this.followers,
-      following: following ?? this.following,
-      posts: posts ?? this.posts,
-      isVerified: isVerified ?? this.isVerified,
-      createdAt: createdAt ?? this.createdAt,
-      lastActive: lastActive ?? this.lastActive,
-      status: status ?? this.status,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      website: website ?? this.website,
-      location: location ?? this.location,
-      interests: interests ?? this.interests,
-      socialLinks: socialLinks ?? this.socialLinks,
-    );
-  }
-
-  // Rule: Safe JSON parsing with modern Enum support
+  // Safe JSON parsing with dynamic type handling
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id']?.toString() ?? '',
@@ -88,22 +50,33 @@ class User {
       email: json['email']?.toString() ?? '',
       profileImage: json['profileImage']?.toString() ?? '',
       bio: json['bio']?.toString() ?? '',
-      followers: json['followers'] ?? 0,
-      following: json['following'] ?? 0,
-      posts: json['posts'] ?? 0,
+      followers: (json['followers'] as num?)?.toInt() ?? 0,
+      following: (json['following'] as num?)?.toInt() ?? 0,
+      posts: (json['posts'] as num?)?.toInt() ?? 0,
       isVerified: json['isVerified'] ?? false,
-      createdAt: json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
-      lastActive: json['lastActive'] != null ? DateTime.tryParse(json['lastActive']) : null,
+      createdAt: _parseDate(json['createdAt']),
+      lastActive: _parseDate(json['lastActive']),
       status: _parseStatus(json['status']),
-      phoneNumber: json['phoneNumber'],
-      website: json['website'],
-      location: json['location'],
-      interests: json['interests'] != null ? List<String>.from(json['interests']) : [],
-      socialLinks: json['socialLinks'] ?? {},
+      phoneNumber: json['phoneNumber']?.toString(),
+      website: json['website']?.toString(),
+      location: json['location']?.toString(),
+      // FIX: Safer way to handle List<dynamic> to List<String>
+      interests: (json['interests'] as List?)?.map((item) => item.toString()).toList() ?? const [],
+      // FIX: Ensure socialLinks is always a Map
+      socialLinks: (json['socialLinks'] is Map) ? Map<String, dynamic>.from(json['socialLinks']) : const {},
     );
   }
 
+  static DateTime? _parseDate(dynamic date) {
+    if (date == null) return null;
+    if (date is String) return DateTime.tryParse(date);
+    // If you ever use Firestore Timestamps directly:
+    // if (date is Timestamp) return date.toDate(); 
+    return null;
+  }
+
   static UserStatus _parseStatus(dynamic status) {
+    if (status == null) return UserStatus.offline;
     final s = status.toString().toLowerCase();
     return UserStatus.values.firstWhere(
       (e) => e.name == s,
@@ -135,7 +108,6 @@ class User {
 
   // --- PREMIUM HELPERS ---
 
-  // Concise Number Formatter (e.g., 1.2K, 5M)
   String _formatCount(int count) {
     if (count >= 1000000) return '${(count / 1000000).toStringAsFixed(1)}M';
     if (count >= 1000) return '${(count / 1000).toStringAsFixed(1)}K';
@@ -146,7 +118,6 @@ class User {
   String get formattedFollowing => _formatCount(following);
   String get formattedPosts => _formatCount(posts);
 
-  // Short-hand Activity Text (matches Post timeAgo style)
   String get lastActiveText {
     if (status == UserStatus.online) return 'Online';
     if (lastActive == null) return 'Offline';
@@ -160,8 +131,8 @@ class User {
   }
 
   String get initials {
+    if (name.trim().isEmpty) return '?';
     final parts = name.trim().split(' ');
-    if (parts.isEmpty || name.isEmpty) return '?';
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
   }
@@ -171,6 +142,34 @@ class User {
 
   @override
   int get hashCode => id.hashCode;
+
+  User copyWith({
+    String? id, String? name, String? email, String? profileImage,
+    String? bio, int? followers, int? following, int? posts,
+    bool? isVerified, DateTime? createdAt, DateTime? lastActive,
+    UserStatus? status, String? phoneNumber, String? website,
+    String? location, List<String>? interests, Map<String, dynamic>? socialLinks,
+  }) {
+    return User(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      profileImage: profileImage ?? this.profileImage,
+      bio: bio ?? this.bio,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
+      posts: posts ?? this.posts,
+      isVerified: isVerified ?? this.isVerified,
+      createdAt: createdAt ?? this.createdAt,
+      lastActive: lastActive ?? this.lastActive,
+      status: status ?? this.status,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      website: website ?? this.website,
+      location: location ?? this.location,
+      interests: interests ?? this.interests,
+      socialLinks: socialLinks ?? this.socialLinks,
+    );
+  }
 
   static const User empty = User(
     id: '', name: '', email: '', profileImage: '', bio: '', followers: 0, following: 0, posts: 0,
