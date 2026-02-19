@@ -20,6 +20,11 @@ class AuthProvider with ChangeNotifier {
   bool get hasError => _status == AuthStatus.error;
   String? get token => _token;
 
+// Add this public method at the top, below your getters
+Future<void> loadToken() async {
+  await _loadToken();
+}
+
   static const String _tokenKey = 'auth_token';
 
   // --- Mock user database ---
