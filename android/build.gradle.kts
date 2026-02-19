@@ -4,7 +4,7 @@ plugins {
     id("com.android.application") version "8.11.1" apply false
     
     // 2. Kotlin plugin - Required for Flutter's Android side
-    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
     
     // 3. Google Services plugin - Required for Firebase
     id("com.google.gms.google-services") version "4.4.2" apply false
