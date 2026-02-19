@@ -28,24 +28,40 @@ class AuthProvider with ChangeNotifier {
   // --- Auto-login ---
   Future<void> _autoLogin() async {
     _setLoading();
-    final fbUser = _auth.currentUser;
-    if (fbUser != null) {
-      await _loadUser(fbUser.uid);
-      _status = AuthStatus.authenticated;
-    } else {
-      _status = AuthStatus.unauthenticated;
+    try {
+      final fbUser = _auth.currentUser;
+      if (fbUser != null) {
+        await _loadUser(fbUser.uid);
+        // Load user might set status to error, check before confirming auth
+        if (_status != AuthStatus.error) {
+          _status = AuthStatus.authenticated;
+        }
+      } else {
+        _status = AuthStatus.unauthenticated;
+      }
+    } catch (e) {
+      _setError('Auto-login session expired or failed');
+    } finally {
+      // CRITICAL: Ensure we are no longer in 'initial' or 'loading' state
+      if (_status == AuthStatus.initial || _status == AuthStatus.loading) {
+        _status = AuthStatus.unauthenticated;
+      }
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   Future<void> _loadUser(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
-      if (doc.exists) {
+      if (doc.exists && doc.data() != null) {
         _currentUser = User.fromJson(doc.data()!);
+      } else {
+        // If Auth exists but Firestore doesn't, treat as unauthenticated
+        _status = AuthStatus.unauthenticated;
       }
     } catch (e) {
-      _setError('Failed to load user data');
+      _setError('Failed to load user data from cloud');
+      rethrow; // Pass to _autoLogin catch block
     }
   }
 
@@ -62,7 +78,7 @@ class AuthProvider with ChangeNotifier {
       _setError(e.message ?? 'Sign in failed');
       return false;
     } catch (e) {
-      _setError('Something went wrong');
+      _setError('Something went wrong during sign in');
       return false;
     }
   }
@@ -97,7 +113,7 @@ class AuthProvider with ChangeNotifier {
       _setError(e.message ?? 'Sign up failed');
       return false;
     } catch (e) {
-      _setError('Something went wrong');
+      _setError('Something went wrong during account creation');
       return false;
     }
   }
@@ -111,7 +127,7 @@ class AuthProvider with ChangeNotifier {
       _status = AuthStatus.unauthenticated;
       notifyListeners();
     } catch (e) {
-      _setError('Failed to sign out');
+      _setError('Failed to sign out correctly');
     }
   }
 
@@ -127,7 +143,7 @@ class AuthProvider with ChangeNotifier {
       _setError(e.message ?? 'Password reset failed');
       return false;
     } catch (e) {
-      _setError('Something went wrong');
+      _setError('Could not send reset email');
       return false;
     }
   }
@@ -158,7 +174,10 @@ class AuthProvider with ChangeNotifier {
   void updateLastActive() {
     if (_currentUser == null) return;
     _currentUser = _currentUser!.copyWith(lastActive: DateTime.now());
-    _firestore.collection('users').doc(_currentUser!.id).update({'lastActive': DateTime.now().toIso8601String()});
+    _firestore
+        .collection('users')
+        .doc(_currentUser!.id)
+        .update({'lastActive': DateTime.now().toIso8601String()});
     notifyListeners();
   }
 
