@@ -14,21 +14,21 @@ android {
 
     signingConfigs {
         create("release") {
-            // Logic to decode the Base64 string from Codemagic Environment Variables
+            // Reconstruct the keystore file from the Environment Variable
             val keystoreBase64 = System.getenv("KEYSTORE_BASE64")
             val keystoreFile = file("permanent-key-decoded.jks")
             
-            if (keystoreBase64 != null && !keystoreBase64.isEmpty()) {
-                // This decodes your text string back into a real .jks file during the build
+            if (keystoreBase64 != null && keystoreBase64.isNotEmpty()) {
+                // Decodes the string back into the binary file
                 val decodedBytes = Base64.getDecoder().decode(keystoreBase64.trim())
                 keystoreFile.writeBytes(decodedBytes)
                 storeFile = keystoreFile
             } else {
-                // Fallback to local file if variable is missing (for local testing)
+                // Local fallback
                 storeFile = file("permanent-key.jks")
             }
 
-            // Replace these with your actual passwords from Cloud Shell
+            // Replace with your actual password from Cloud Shell
             storePassword = "YOUR_PASSWORD_HERE" 
             keyAlias = "my-alias"
             keyPassword = "YOUR_PASSWORD_HERE"
